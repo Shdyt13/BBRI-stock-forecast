@@ -35,49 +35,60 @@ async def upload_dataset(file: UploadFile = File(...)):
 
 @app.get("/api/feature-selection")
 async def get_feature_selection():
-    # Saat ini masih menggunakan mock data agar UI Frontend bisa dibangun
-    return {
-        "features": [
-            {"rank": 1, "name": "Open", "score": 0.312, "status": "selected"},
-            {"rank": 2, "name": "High", "score": 0.312, "status": "selected"},
-            {"rank": 3, "name": "Low", "score": 0.280, "status": "selected"},
-            {"rank": 4, "name": "Close", "score": 0.250, "status": "selected"}
-        ]
-    }
+    if not os.path.exists(TEMP_DATA_PATH):
+        return {"error": "Dataset belum diunggah."}
+        
+    df = pd.read_csv(TEMP_DATA_PATH)
+    X = df[['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']]
+    y = df['Log_Return']
+    
+    # Panggil fungsi ML asli
+    ranking_fitur = select_features(X, y)
+    
+    return {"features": ranking_fitur}
 
 @app.post("/api/predict")
 async def run_prediction():
-    # 1. Cek apakah dataset sudah diunggah
     if not os.path.exists(TEMP_DATA_PATH):
-        return {"error": "Dataset belum diunggah. Silakan upload terlebih dahulu."}
+        return {"error": "Dataset belum diunggah."}
         
-    # 2. Baca data bersih
     df = pd.read_csv(TEMP_DATA_PATH)
-    
-    # 3. Tentukan Fitur (X) dan Target (y)
-    # Untuk simulasi Skenario 'Selected Features', kita gunakan fitur dengan ranking teratas
-    X = df[['Open', 'High', 'Low', 'Close']] 
-    # Target prediksi sesuai proposal adalah Log Return (atau Close price ter-normalisasi)
-    y = df['Log_Return'] 
-    
-    # 4. Pembagian Data (Time Series Split: 80% Training, 20% Testing)
+    y = df['Log_Return']
     split_idx = int(len(df) * 0.8)
-    X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
     y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
     
-    # 5. Jalankan proses Training, Tuning (GridSearchCV), dan Evaluasi
-    metrics, svr_pred, rf_pred = train_and_evaluate_models(X_train, y_train, X_test, y_test)
+    # ==========================================
+    # SKENARIO 1: ALL FEATURES
+    # ==========================================
+    X_all = df[['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']]
+    X_all_train, X_all_test = X_all.iloc[:split_idx], X_all.iloc[split_idx:]
     
-    # 6. Siapkan data untuk grafik UI (Ambil 50 data terakhir agar grafik tidak terlalu padat/ruwet)
-    chart_data = {
-        "actual": y_test.tail(50).tolist(),
-        "svr_predicted": svr_pred[-50:].tolist(),
-        "rf_predicted": rf_pred[-50:].tolist()
-    }
+    metrics_all, svr_pred_all, rf_pred_all = train_and_evaluate_models(X_all_train, y_train, X_all_test, y_test)
     
-    # 7. Kembalikan metrik dan data grafik ke Frontend
+    # ==========================================
+    # SKENARIO 2: SELECTED FEATURES (Top 4)
+    # ==========================================
+    # Menjalankan feature selection otomatis untuk mengambil 4 teratas
+    ranking = select_features(X_all, y)
+    top_4_features = [f['name'] for f in ranking if f['status'] == 'selected']
+    
+    X_sel = df[top_4_features]
+    X_sel_train, X_sel_test = X_sel.iloc[:split_idx], X_sel.iloc[split_idx:]
+    
+    metrics_sel, svr_pred_sel, rf_pred_sel = train_and_evaluate_models(X_sel_train, y_train, X_sel_test, y_test)
+    
+    # Gabungkan hasil untuk dikirim ke Frontend
     return {
-        "message": "Prediksi berhasil!",
-        "metrics": metrics,
-        "chart_data": chart_data
+        "message": "Eksperimen Dua Skenario Berhasil!",
+        "metrics": {
+            "All_Features": metrics_all,
+            "Selected_Features": metrics_sel
+        },
+        "chart_data": {
+            "actual": y_test.tail(50).tolist(),
+            "svr_all": svr_pred_all[-50:].tolist(),
+            "rf_all": rf_pred_all[-50:].tolist(),
+            "svr_selected": svr_pred_sel[-50:].tolist(),
+            "rf_selected": rf_pred_sel[-50:].tolist(),
+        }
     }

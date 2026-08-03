@@ -45,8 +45,24 @@ def select_features(X, y):
     rf.fit(X, y)
     
     importance = rf.feature_importances_
-    # Mengembalikan nilai importance untuk di-ranking
-    return importance
+    
+    # Gabungkan nama fitur dan skornya, lalu urutkan dari yang terbesar
+    fitur_skor = []
+    for i, col in enumerate(X.columns):
+        fitur_skor.append({
+            "name": col,
+            "score": float(importance[i])
+        })
+        
+    # Urutkan berdasarkan skor tertinggi
+    fitur_skor = sorted(fitur_skor, key=lambda x: x['score'], reverse=True)
+    
+    # Beri ranking dan status (misal: 4 fitur teratas = 'selected', sisanya 'dropped')
+    for i, item in enumerate(fitur_skor):
+        item['rank'] = i + 1
+        item['status'] = 'selected' if i < 4 else 'dropped'
+        
+    return fitur_skor
 
 # 3. Model Training & Tuning
 def train_and_evaluate_models(X_train, y_train, X_test, y_test):
