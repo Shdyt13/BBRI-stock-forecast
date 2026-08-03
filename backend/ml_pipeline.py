@@ -8,16 +8,33 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # 1. Preprocessing Data
 def preprocess_data(df):
-    # Menangani missing value dengan Forward Fill
-    df = df.ffill()
+    # 1. Bersihkan spasi tersembunyi pada nama kolom (jaga-jaga format CSV berantakan)
+    df.columns = df.columns.str.strip()
     
-    # Transformasi Log Return dari Close Price
+    fitur_numerik = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+    
+    # 2. Paksa konversi semua kolom fitur menjadi angka (numerik)
+    for col in fitur_numerik:
+        if col in df.columns:
+            # Jika terdeteksi sebagai teks, bersihkan tanda koma terlebih dahulu
+            if df[col].dtype == 'object' or df[col].dtype.name == 'string':
+                df[col] = df[col].astype(str).str.replace(',', '', regex=False)
+            
+            # Paksa konversi ke angka. Teks aneh seperti "null" akan diubah jadi NaN
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # 3. Menangani missing value (mengisi data kosong dengan data hari sebelumnya)
+    # Kita tambahkan bfill() untuk jaga-jaga jika baris paling pertama yang kosong
+    df = df.ffill().bfill()
+    
+    # 4. Transformasi Log Return dari Close Price
     df['Log_Return'] = np.log(df['Close'] / df['Close'].shift(1))
+    
+    # Hapus baris pertama karena shift(1) akan selalu membuat Log_Return baris pertama jadi NaN
     df = df.dropna()
     
-    # Normalisasi Min-Max Scaling
+    # 5. Normalisasi Min-Max Scaling
     scaler = MinMaxScaler()
-    fitur_numerik = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
     df[fitur_numerik] = scaler.fit_transform(df[fitur_numerik])
     
     return df
