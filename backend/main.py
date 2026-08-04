@@ -226,166 +226,86 @@ async def run_prediction():
     )
 
     # =====================================================
-    # FUTURE PREDICTION
+    # FUTURE PREDICTION (PREDIKSI MASA DEPAN)
     # =====================================================
 
     # Ambil baris terakhir yang sebenarnya
-    # yaitu 30 Desember 2025
     latest_row = df.iloc[[-1]]
 
-    last_date = latest_row[
-        "Date"
-    ].iloc[0]
+    last_date = latest_row["Date"].iloc[0]
+    last_close = float(latest_row["Close"].iloc[0])
 
-    last_close = float(
-        latest_row[
-            "Close"
-        ].iloc[0]
-    )
+    latest_X = latest_row[FEATURES]
 
-    # Fitur tanggal terakhir
-    latest_X = latest_row[
-        FEATURES
-    ]
-
-    # Normalisasi menggunakan scaler
-    # yang FIT pada data training
+    # Normalisasi menggunakan scaler (ALL FEATURES)
     latest_X_scaled = pd.DataFrame(
-        scaler.transform(
-            latest_X
-        ),
+        scaler.transform(latest_X),
         columns=FEATURES
     )
 
-    # Fitur terpilih
-    latest_X_selected = (
-        latest_X_scaled[
-            selected_features
-        ]
-    )
+    # Normalisasi menggunakan scaler (SELECTED FEATURES)
+    latest_X_selected = latest_X_scaled[selected_features]
 
-    # =====================================================
-    # PREDICT NEXT TRADING DAY
-    # =====================================================
+    # --- PREDIKSI: SELECTED FEATURES ---
+    pred_log_return_svr_sel = float(svr_model_selected.predict(latest_X_selected)[0])
+    pred_log_return_rf_sel = float(rf_model_selected.predict(latest_X_selected)[0])
+    
+    pred_close_svr_sel = last_close * np.exp(pred_log_return_svr_sel)
+    pred_close_rf_sel = last_close * np.exp(pred_log_return_rf_sel)
 
-    predicted_log_return_svr = float(
-        svr_model_selected.predict(
-            latest_X_selected
-        )[0]
-    )
-
-    predicted_log_return_rf = float(
-        rf_model_selected.predict(
-            latest_X_selected
-        )[0]
-    )
-
-    # =====================================================
-    # LOG RETURN → CLOSE PRICE
-    # =====================================================
-
-    predicted_close_svr = (
-        last_close
-        * np.exp(
-            predicted_log_return_svr
-        )
-    )
-
-    predicted_close_rf = (
-        last_close
-        * np.exp(
-            predicted_log_return_rf
-        )
-    )
+    # --- PREDIKSI: ALL FEATURES ---
+    pred_log_return_svr_all = float(svr_model_all.predict(latest_X_scaled)[0])
+    pred_log_return_rf_all = float(rf_model_all.predict(latest_X_scaled)[0])
+    
+    pred_close_svr_all = last_close * np.exp(pred_log_return_svr_all)
+    pred_close_rf_all = last_close * np.exp(pred_log_return_rf_all)
 
     # =====================================================
     # TANGGAL PREDIKSI
     # =====================================================
-
-    # Karena target adalah next trading day,
-    # ambil Target_Date dari baris terakhir
-    #
-    # Jika dataset hanya sampai 30 Des 2025,
-    # Target_Date belum tersedia.
-    #
-    # Oleh karena itu kita gunakan tanggal
-    # perdagangan berikutnya secara eksplisit.
-
     prediction_date = "2026-01-02"
 
+    # =====================================================
+    # DENORMALISASI DATA GRAFIK (50 DATA TERAKHIR)
+    # =====================================================
+    last_50_close = model_df["Close"].iloc[split_idx:].tail(50).values
+    
+    actual_prices = last_50_close * np.exp(y_test.tail(50).values)
+    
+    svr_sel_prices = last_50_close * np.exp(svr_pred_selected[-50:])
+    rf_sel_prices = last_50_close * np.exp(rf_pred_selected[-50:])
+    
+    svr_all_prices = last_50_close * np.exp(svr_pred_all[-50:])
+    rf_all_prices = last_50_close * np.exp(rf_pred_all[-50:])
+
     return {
-
-        "message":
-        "Prediksi 1 Hari Perdagangan Berikutnya Berhasil!",
-
+        "message": "Prediksi 1 Hari Perdagangan Berikutnya Berhasil!",
         "prediction": {
-
-            "base_date":
-            last_date.strftime(
-                "%Y-%m-%d"
-            ),
-
-            "prediction_date":
-            prediction_date,
-
-            "last_actual_close":
-            round(
-                last_close,
-                2
-            ),
-
-            "SVR": {
-
-                "predicted_log_return":
-                predicted_log_return_svr,
-
-                "predicted_close":
-                round(
-                    predicted_close_svr,
-                    2
-                )
+            "base_date": last_date.strftime("%Y-%m-%d"),
+            "prediction_date": prediction_date,
+            "last_actual_close": round(last_close, 2),
+            "Selected_Features": {
+                "SVR": round(pred_close_svr_sel, 2),
+                "RandomForest": round(pred_close_rf_sel, 2)
             },
-
-            "RandomForest": {
-
-                "predicted_log_return":
-                predicted_log_return_rf,
-
-                "predicted_close":
-                round(
-                    predicted_close_rf,
-                    2
-                )
+            "All_Features": {
+                "SVR": round(pred_close_svr_all, 2),
+                "RandomForest": round(pred_close_rf_all, 2)
             }
         },
-
         "feature_selection": {
-
-            "selected_features":
-            selected_features,
-
-            "ranking":
-            ranking
+            "selected_features": selected_features,
+            "ranking": ranking
         },
-
         "metrics": {
-
-            "All_Features":
-            metrics_all,
-
-            "Selected_Features":
-            metrics_selected
+            "All_Features": metrics_all,
+            "Selected_Features": metrics_selected
         },
-
         "chart_data": {
-
-            "actual":
-            y_test.tail(50).tolist(),
-
-            "svr_selected":
-            svr_pred_selected[-50:].tolist(),
-
-            "rf_selected":
-            rf_pred_selected[-50:].tolist()
+            "actual": [round(float(val), 2) for val in actual_prices],
+            "svr_selected": [round(float(val), 2) for val in svr_sel_prices],
+            "rf_selected": [round(float(val), 2) for val in rf_sel_prices],
+            "svr_all": [round(float(val), 2) for val in svr_all_prices],
+            "rf_all": [round(float(val), 2) for val in rf_all_prices]
         }
     }
