@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  overflow-y: auto !important;
+  height: auto;
+  min-height: 100vh;
+}
+
+body {
+  font-family:
+    'Inter',
+    'Roboto',
+    'Poppins',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-y: auto !important;
+  height: auto;
+  min-height: 100vh;
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+}

@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  # Backend Service (FastAPI + ML) - TEAM VERSION
+  backend:
+    build:
+      context: ./backend-bbri/backend
+      dockerfile: Dockerfile
+    container_name: bbri-prediction-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount local backend folder for live code editing
+      - ./backend-bbri/backend:/app
+      # Exclude Python cache
+      - /app/__pycache__
+      # Create data directory for temp storage
+      - ./backend-bbri/backend/data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - bbri-network
+
+  # Frontend Service (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bbri-prediction-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount local frontend folder for live code editing
+      - ./frontend:/app
+      # Use anonymous volume for node_modules to avoid OS conflicts
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - bbri-network
+
+# Network for service communication
+networks:
+  bbri-network:
+    driver: bridge
