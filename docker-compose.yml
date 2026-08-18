@@ -5,7 +5,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: bbri_backend_api
+    container_name: bbri_backend_oldyn
     ports:
       - "8000:8000"
     volumes:
