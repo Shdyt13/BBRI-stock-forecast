@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bbri_backend_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    # Konfigurasi ini memastikan kontainer me-restart otomatis jika error
+    restart: unless-stopped
