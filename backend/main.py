@@ -109,7 +109,7 @@ def compute_prediction_pipeline():
         X_train_selected, y_train, X_test_selected, y_test, prev_close_test
     )
 
-    # Prediksi Masa Depan (02 Jan 2026)
+    # Prediksi Masa Depan (Next Business Day)
     latest_row = df.iloc[[-1]]
     last_date = latest_row["Date"].iloc[0]
     last_close = clean_float(latest_row["Close"].iloc[0])
@@ -136,8 +136,10 @@ def compute_prediction_pipeline():
         * np.exp(clean_float(rf_model_all.predict(latest_X_scaled)[0]))
     )
 
-    prediction_date = "02 Januari 2026"
-    actual_target_close = 3640.0
+    last_date_obj = pd.to_datetime(last_date)
+    next_bday = last_date_obj + BDay(1)
+    months_id = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    prediction_date = f"{next_bday.day:02d} {months_id[next_bday.month-1]} {next_bday.year}"
 
     # Data 50 hari terakhir
     last_50_dates = (
@@ -163,7 +165,6 @@ def compute_prediction_pipeline():
         "last_date": last_date,
         "last_close": last_close,
         "prediction_date": prediction_date,
-        "actual_target_close": actual_target_close,
         "pred_close_svr_sel": pred_close_svr_sel,
         "pred_close_rf_sel": pred_close_rf_sel,
         "pred_close_svr_all": pred_close_svr_all,
@@ -194,7 +195,6 @@ async def run_prediction():
             "base_date": pd.to_datetime(res["last_date"]).strftime("%d %B %Y"),
             "prediction_date": res["prediction_date"],
             "last_actual_close": round(res["last_close"], 2),
-            "actual_target_close": res["actual_target_close"],
             "Selected_Features": {
                 "SVR": round(res["pred_close_svr_sel"], 2),
                 "RandomForest": round(res["pred_close_rf_sel"], 2),
@@ -246,10 +246,6 @@ async def export_excel():
                 {
                     "Keterangan": "Tanggal Prediksi",
                     "Nilai": res["prediction_date"],
-                },
-                {
-                    "Keterangan": "Aktual Pasar (02 Jan 2026)",
-                    "Nilai": round(res["actual_target_close"], 2),
                 },
                 {
                     "Keterangan": "Prediksi SVR (Selected Top-4)",

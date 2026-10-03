@@ -358,18 +358,6 @@ export default function App() {
                     </p>
                   </div>
                   
-                  <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-[10px] text-emerald-800 font-bold">Aktual Pasar (02 Jan 2026)</p>
-                      <span className="text-[9px] font-extrabold bg-emerald-600 text-white px-1.5 py-0.5 rounded">
-                        BENCHMARK
-                      </span>
-                    </div>
-                    <p className="text-xl font-black text-emerald-700">
-                      Rp{Number(predictionData?.prediction?.actual_target_close || 3640).toLocaleString('id-ID')}
-                    </p>
-                  </div>
-
                   <div className="bg-[#F8FAFC] border border-slate-200 p-2.5 rounded-xl shadow-sm flex justify-between items-center">
                     <p className="text-[10px] text-slate-500 font-medium">
                       Penutupan ({predictionData?.prediction?.base_date || "30 Desember 2025"}):
@@ -382,19 +370,6 @@ export default function App() {
                   <div className="bg-[#FCF5FF] border border-purple-200 p-3 rounded-xl shadow-sm">
                     <div className="flex justify-between items-center mb-1">
                       <p className="text-[11px] text-purple-700 font-bold">Prediksi SVR</p>
-                      {(() => {
-                        const pred = Number(useFeatureSelection 
-                          ? predictionData?.prediction?.Selected_Features?.SVR 
-                          : predictionData?.prediction?.All_Features?.SVR || 0);
-                        const actual = Number(predictionData?.prediction?.actual_target_close || 3640);
-                        const selisih = Math.abs(pred - actual);
-                        const akurasi = Math.max(0, 100 - (selisih / actual) * 100);
-                        return (
-                          <span className="text-[10px] font-bold text-purple-800 bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded">
-                            Akurasi: {akurasi.toFixed(2)}%
-                          </span>
-                        );
-                      })()}
                     </div>
                     <p className="text-xl font-black text-purple-700 mb-0.5">
                       Rp{Number(useFeatureSelection 
@@ -402,48 +377,17 @@ export default function App() {
                         : predictionData?.prediction?.All_Features?.SVR || 0
                       ).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </p>
-                    <p className="text-[10px] text-purple-600/80 font-medium">
-                      Selisih: Rp{(() => {
-                        const pred = Number(useFeatureSelection 
-                          ? predictionData?.prediction?.Selected_Features?.SVR 
-                          : predictionData?.prediction?.All_Features?.SVR || 0);
-                        const actual = Number(predictionData?.prediction?.actual_target_close || 3640);
-                        return Math.abs(pred - actual).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                      })()}
-                    </p>
                   </div>
 
                   <div className="bg-[#FFF5F5] border border-red-200 p-3 rounded-xl shadow-sm">
                     <div className="flex justify-between items-center mb-1">
                       <p className="text-[11px] text-red-700 font-bold">Prediksi RFR</p>
-                      {(() => {
-                        const pred = Number(useFeatureSelection 
-                          ? predictionData?.prediction?.Selected_Features?.RandomForest 
-                          : predictionData?.prediction?.All_Features?.RandomForest || 0);
-                        const actual = Number(predictionData?.prediction?.actual_target_close || 3640);
-                        const selisih = Math.abs(pred - actual);
-                        const akurasi = Math.max(0, 100 - (selisih / actual) * 100);
-                        return (
-                          <span className="text-[10px] font-bold text-red-800 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded">
-                            Akurasi: {akurasi.toFixed(2)}%
-                          </span>
-                        );
-                      })()}
                     </div>
                     <p className="text-xl font-black text-red-700 mb-0.5">
                       Rp{Number(useFeatureSelection 
                         ? predictionData?.prediction?.Selected_Features?.RandomForest 
                         : predictionData?.prediction?.All_Features?.RandomForest || 0
                       ).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                    </p>
-                    <p className="text-[10px] text-red-600/80 font-medium">
-                      Selisih: Rp{(() => {
-                        const pred = Number(useFeatureSelection 
-                          ? predictionData?.prediction?.Selected_Features?.RandomForest 
-                          : predictionData?.prediction?.All_Features?.RandomForest || 0);
-                        const actual = Number(predictionData?.prediction?.actual_target_close || 3640);
-                        return Math.abs(pred - actual).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                      })()}
                     </p>
                   </div>
                 </div>
