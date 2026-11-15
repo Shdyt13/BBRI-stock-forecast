@@ -16,37 +16,62 @@ Aplikasi *full-stack* untuk memprediksi harga saham **PT Bank Rakyat Indonesia (
 - **Grafik interaktif** aktual vs prediksi (50 data uji terakhir) menggunakan Recharts.
 - **Ekspor laporan ke Excel** (`.xlsx`) berisi ringkasan prediksi, metrik evaluasi, hasil ranking fitur, dan data grafik.
 
----
-
 ## Arsitektur Sistem
 
-```text
-┌───────────────────────────────────────────────────────────┐
-│                    FRONTEND — React                        │
-│         React 19 • Vite • Tailwind CSS • Recharts          │
-│                      Port: 3000 / 5173                      │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ REST API (JSON, Axios)
-                            ▼
-┌───────────────────────────────────────────────────────────┐
-│                    BACKEND — FastAPI                        │
-│      Python 3.10 • FastAPI • Uvicorn • Scikit-learn         │
-│                      Port: 8000                              │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ CSV Dataset (in-memory + data/*.csv)
-                            ▼
-┌───────────────────────────────────────────────────────────┐
-│                     ML PIPELINE                             │
-│  1. Data Cleaning & Log-Return Feature Engineering           │
-│  2. Chronological Train/Test Split (80/20)                   │
-│  3. Feature Selection (Random Forest Importance, Top-4)      │
-│  4. Training SVR & Random Forest (GridSearchCV + TSCV)       │
-│  5. Evaluasi (MAE, RMSE, R²)                                 │
-│  6. Prediksi Hari Perdagangan Berikutnya                     │
-└───────────────────────────────────────────────────────────┘
-```
+```mermaid
+flowchart TB
+    subgraph FE["FRONTEND — React"]
+        A["React 19"]
+        B["Vite"]
+        C["Tailwind CSS"]
+        D["Recharts"]
+        A --- B
+        A --- C
+        A --- D
+    end
 
----
+    subgraph BE["BACKEND — FastAPI"]
+        E["FastAPI REST API"]
+        F["Python 3.10"]
+        G["Uvicorn"]
+        H["Scikit-learn"]
+        E --- F
+        E --- G
+        E --- H
+    end
+
+    subgraph DATA["DATASET"]
+        I[("Historical Stock Data<br/>CSV Dataset")]
+    end
+
+    subgraph ML["MACHINE LEARNING PIPELINE"]
+        J["1. Data Cleaning"]
+        K["2. Log-Return Feature Engineering"]
+        L["3. Chronological Train/Test Split<br/>80% Training — 20% Testing"]
+        M["4. Feature Selection<br/>Random Forest Feature Importance<br/>Top-4 Features"]
+        N["5. Model Training<br/>SVR & Random Forest<br/>GridSearchCV + TimeSeriesSplit"]
+        O["6. Model Evaluation<br/>MAE • RMSE • R²"]
+        P["7. Stock Price Prediction<br/>Next Trading Day"]
+
+        J --> K --> L --> M --> N --> O --> P
+    end
+
+    A -->|"HTTP / REST API<br/>JSON • Axios"| E
+    E -->|"Load CSV Dataset"| I
+    I --> J
+    P -->|"Prediction & Evaluation Results"| E
+    E -->|"API Response (JSON)"| A
+
+    classDef frontend fill:#173B5E,stroke:#38BDF8,color:#FFFFFF
+    classDef backend fill:#174D3A,stroke:#34D399,color:#FFFFFF
+    classDef dataset fill:#59451C,stroke:#FBBF24,color:#FFFFFF
+    classDef pipeline fill:#38265C,stroke:#A78BFA,color:#FFFFFF
+
+    class A,B,C,D frontend
+    class E,F,G,H backend
+    class I dataset
+    class J,K,L,M,N,O,P pipeline
+```
 
 ## Machine Learning Pipeline
 
