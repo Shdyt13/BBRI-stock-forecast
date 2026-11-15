@@ -1,136 +1,90 @@
-# 📚 API Documentation: Prediksi Saham BBRI
-
-**Base URL:** `http://localhost:8000`  
-**CORS:** Sudah diizinkan untuk semua origin (`*`).
-
-Aplikasi *Frontend* perlu memanggil dua *endpoint* secara berurutan: pertama untuk mengunggah file CSV, dan kedua untuk menjalankan komputasi *Machine Learning*.
+<div align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/9/97/Logo_BRI.png" width="150" alt="Logo BBRI">
+  <h1>📈 Sistem Prediksi Harga Saham BBRI</h1>
+  <h3><i>Working Paper (Implementasi Sistem Tugas Akhir)</i></h3>
+  
+  [![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+  [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.3%2B-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+  [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+</div>
 
 ---
 
-## 1. Upload Dataset
-Digunakan untuk mengunggah file CSV mentah (misal: `BBRI_2015_2025.csv`), membersihkannya, dan menyimpannya di *server* sementara.
+> **Penulis:** Oldyn Septiana Sinurat (NIM: 2101020075)  
+> **Institusi:** Program Studi Teknik Informatika, Fakultas Teknik dan Teknologi Kemaritiman, Universitas Maritim Raja Ali Haji (UMRAH), Tanjungpinang, 2026
 
-*   **URL:** `/api/upload`
-*   **Method:** `POST`
-*   **Content-Type:** `multipart/form-data`
+---
 
-### Request (React.js / Axios Example)
-```javascript
-const formData = new FormData();
-formData.append("file", selectedFile); // selectedFile didapat dari input type="file"
+## 📖 1. Latar Belakang Penelitian
+Pergerakan harga saham, seperti saham PT Bank Rakyat Indonesia (Persero) Tbk (BBRI), dikenal memiliki karakteristik yang dinamis, kompleks, dan sangat fluktuatif (volatil). Untuk menghadapi data runtun waktu (*time series*) finansial, *Machine Learning* telah menjadi pendekatan utama karena kemampuannya mempelajari pola non-linear dari data historis. 
 
-const response = await axios.post("http://localhost:8000/api/upload", formData, {
-  headers: { "Content-Type": "multipart/form-data" }
-});
-Success Response (200 OK)
-JSON
-{
-  "message": "Dataset berhasil diunggah dan diproses!",
-  "rows": 2710,
-  "last_date": "2025-12-30 00:00:00"
-}
-2. Run Prediction & Feature Selection
-Ini adalah endpoint utama. Saat dipanggil, backend akan otomatis:
+Penelitian ini membandingkan kinerja dua algoritma *Machine Learning* populer dalam ranah regresi harga saham: **Support Vector Regression (SVR)** dan **Random Forest Regressor**. Kebaruan (*novelty*) pada penelitian ini terletak pada integrasi tahap seleksi fitur (*Feature Selection*) menggunakan metode *Feature Importance* dari algoritma Random Forest untuk mereduksi dimensi data, mengurangi *noise*, dan meningkatkan kapabilitas generalisasi model.
 
-Melakukan Feature Selection.
+## ⚙️ 2. Metodologi (Implementasi Backend)
+Sistem (Backend API) ini mengimplementasikan tahapan riset sesuai dengan proposal penelitian:
 
-Membagi data (80:20).
+1. 📥 **Pengumpulan Data:** Dataset historis harian BBRI diperoleh dari Yahoo Finance (periode 2015-2025).
+2. 🧹 **Pra-pemrosesan Data (Data Preprocessing):**
+   - *Data Cleaning:* Mengatasi *missing values* pada data saham harian menggunakan metode `Forward Fill`.
+   - *Transformasi:* Melakukan transformasi nilai harga penutupan (*Close Price*) menjadi *Log Return Harian* untuk menstabilkan varians.
+   - *Normalisasi:* Menggunakan *Min-Max Scaling* agar setiap fitur berada dalam rentang `[0, 1]`.
+3. 🎯 **Pembentukan Target:** Membentuk prediksi satu langkah ke depan (*one-step-ahead forecasting*), di mana model memprediksi *Log Return* untuk hari perdagangan berikutnya.
+4. ✂️ **Seleksi Fitur:** Memilih fitur dengan *importance score* teratas (*Top-4*) dari himpunan (`Open`, `High`, `Low`, `Close`, `Adj Close`, `Volume`).
+5. 🧠 **Pemodelan & Pelatihan:**
+   - Menerima dataset training dan testing secara terpisah. Data training dipakai untuk fitting dan pelatihan, sedangkan data testing hanya dipakai untuk evaluasi.
+   - Melakukan *Hyperparameter Tuning* menggunakan `GridSearchCV`.
+6. 🧪 **Skenario Eksperimen:**
+   - **Skenario 1:** Pelatihan dan prediksi menggunakan *seluruh fitur*.
+   - **Skenario 2:** Pelatihan dan prediksi menggunakan *4 fitur terpilih* (*Selected Features*).
 
-Melakukan Hyperparameter Tuning & Training untuk SVR dan Random Forest (pada dua skenario).
+## 📊 3. Metrik Evaluasi Model
+Kinerja algoritma pada sistem dievaluasi secara matematis menggunakan 3 metrik regresi yang membandingkan nilai aktual dengan nilai prediksi:
+*   **Mean Absolute Error (MAE):** Rata-rata selisih absolut dari kesalahan prediksi.
+*   **Root Mean Square Error (RMSE):** Akar kuadrat dari rata-rata kuadrat kesalahan (memberi bobot lebih/penalti pada *outlier* atau deviasi ekstrem).
+*   **Koefisien Determinasi ($R^2$):** Metrik untuk mengukur proporsi varians fluktuasi harga saham yang dapat diprediksi dengan tepat oleh variabel *input*.
 
-Menghitung prediksi untuk H+1.
+---
 
-URL: /api/predict
+## 🚀 4. Panduan Menjalankan Sistem (Eksperimen)
 
-Method: POST
+Proyek ini menggunakan arsitektur **FastAPI** dan mendukung penuh kontainerisasi dengan **Docker** agar pengujian model dapat berjalan stabil di berbagai lingkungan komputasi.
 
-Content-Type: application/json
+### Opsi A: Menjalankan dengan Docker Compose (Direkomendasikan) 🐳
 
-Catatan untuk Frontend: Proses ini memakan waktu beberapa detik hingga menit karena proses pencarian parameter / GridSearch. Pastikan untuk menampilkan Loading Spinner di UI.
+Pastikan [Docker Desktop](https://www.docker.com/products/docker-desktop/) sudah terinstal dan berjalan. Cara ini akan mengotomatiskan *build* dan konfigurasi.
 
-Request (React.js / Axios Example)
-JavaScript
-// Tidak perlu mengirim body/payload apa pun
-const response = await axios.post("http://localhost:8000/api/predict");
-const data = response.data;
-Success Response (200 OK) - Struktur JSON
-Berikut adalah struktur data yang akan dikembalikan. Frontend dapat memecah data ini untuk didistribusikan ke masing-masing komponen UI:
+1. **Buka Terminal/Command Prompt** di direktori utama (root) proyek (`Stock_Prediction_System`).
+2. **Jalankan Docker Compose:**
+   ```bash
+   docker compose up -d
+   ```
+   *(Backend FastAPI akan otomatis berjalan di background pada port `8000`)*
+3. **Jalankan Frontend (React/Vite):**
+   Buka terminal baru, pindah ke folder frontend, lalu jalankan:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   Aplikasi antarmuka akan dapat diakses melalui browser di `http://localhost:5173/`.
 
-JSON
-{
-  "message": "Prediksi 1 Hari Perdagangan Berikutnya Berhasil!",
-  
-  "prediction": {
-    "base_date": "2025-12-30",
-    "prediction_date": "2026-01-02",
-    "last_actual_close": 3640.0,
-    "SVR": {
-      "predicted_log_return": 0.0123,
-      "predicted_close": 3685.03
-    },
-    "RandomForest": {
-      "predicted_log_return": 0.0105,
-      "predicted_close": 3678.40
-    }
-  },
+### Opsi B: Menjalankan secara Manual (Local Python) 🐍
 
-  "feature_selection": {
-    "selected_features": ["Open", "High", "Low", "Close"],
-    "ranking": [
-      { "name": "Open", "score": 0.312, "rank": 1, "status": "selected" },
-      { "name": "High", "score": 0.280, "rank": 2, "status": "selected" },
-      { "name": "Low", "score": 0.250, "rank": 3, "status": "selected" },
-      { "name": "Close", "score": 0.100, "rank": 4, "status": "selected" },
-      { "name": "Adj Close", "score": 0.040, "rank": 5, "status": "dropped" },
-      { "name": "Volume", "score": 0.018, "rank": 6, "status": "dropped" }
-    ]
-  },
+Jika Anda ingin menjalankan atau memodifikasi algoritma regresi langsung di perangkat lokal tanpa Docker:
 
-  "metrics": {
-    "All_Features": {
-      "SVR": { "MAE": 0.0214, "RMSE": 0.0337, "R2": 0.9192 },
-      "RandomForest": { "MAE": 0.0248, "RMSE": 0.0389, "R2": 0.9015 }
-    },
-    "Selected_Features": {
-      "SVR": { "MAE": 0.0169, "RMSE": 0.0221, "R2": 0.9410 },
-      "RandomForest": { "MAE": 0.0121, "RMSE": 0.0171, "R2": 0.9520 }
-    }
-  },
+1. **Install dependensi library Python:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Jalankan server menggunakan Uvicorn:**
+   ```bash
+   uvicorn main:app --reload
+   ```
 
-  "chart_data": {
-    "actual": [ -0.0160, 0.0319, 0.0078 ], 
-    "svr_selected": [ 0.0145, 0.0124, 0.0124 ],
-    "rf_selected": [ 0.0329, -0.0045, -0.0129 ]
-  }
-}
-💡 Panduan Integrasi UI untuk Frontend Developer
-1. Komponen Dashboard (Nilai Prediksi T+1)
-Untuk mengisi kartu prediksi harga esok hari, gunakan data dari objek prediction.
+Aplikasi backend akan berjalan pada `http://localhost:8000`. Eksekusi algoritma dilakukan melalui Endpoint `/api/predict` yang akan memicu *pipeline Machine Learning* yang melingkupi pembersihan data, seleksi fitur, pembagian waktu, *grid-search tuning* SVR & RF, serta pengembalian matriks evaluasi dan hasil *forecasting*. Laporan komprehensif metrik evaluasi beserta data grafik bisa diekspor dalam bentuk `.xlsx`.
 
-Harga Aktual Terakhir: data.prediction.last_actual_close
-
-Prediksi SVR Besok: data.prediction.SVR.predicted_close
-
-Prediksi RF Besok: data.prediction.RandomForest.predicted_close
-
-2. Komponen Feature Selection (Tabel & Grafik Batang)
-Untuk merender halaman Feature Selection, looping (map) array dari data.feature_selection.ranking.
-
-Gunakan properti name, score, dan rank untuk tabel.
-
-Gunakan status === "selected" untuk menampilkan ikon centang (✅), dan dropped untuk ikon silang/minus (➖).
-
-3. Komponen Evaluasi Model (Matriks Komparasi)
-Untuk menampilkan tabel MAE, RMSE, dan R², langsung arahkan state ke data.metrics. Karena ada dua skenario (All_Features dan Selected_Features), sangat disarankan membuat tombol Tab di React untuk beralih antara nilai metrik seluruh fitur dan nilai metrik fitur terpilih.
-
-4. Komponen Visualisasi (Grafik Garis)
-Jika menggunakan pustaka seperti Recharts atau Chart.js, data di data.chart_data sudah berupa array yang memiliki panjang seragam (50 titik data terakhir).
-Formatkan datanya di React sebelum dilempar ke komponen grafik:
-
-JavaScript
-const formattedChartData = data.chart_data.actual.map((act, index) => ({
-  hari: `H-${50 - index}`,
-  aktual: act,
-  svr: data.chart_data.svr_selected[index],
-  rf: data.chart_data.rf_selected[index]
-}));
+---
+<div align="center">
+  <i>Dokumen README ini merupakan bagian dari prototipe fungsional (Working Paper) untuk penyusunan dan pengujian eksperimen Tugas Akhir.</i>
+</div>
+*Dokumen README ini merupakan bagian dari prototipe fungsional (Working Paper) untuk penyusunan dan pengujian eksperimen Tugas Akhir.*

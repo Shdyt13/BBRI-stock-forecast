@@ -71,14 +71,12 @@ Model tidak memprediksi harga secara langsung, melainkan memprediksi **log-retur
 predicted_close = last_close * exp(predicted_log_return)
 ```
 
-### 2. Split Data
+### 2. Dataset Training dan Testing
 
-Data dibagi secara **kronologis** (bukan acak) agar urutan waktu tetap terjaga:
-
-```text
-80% → Data Latih (Training)
-20% → Data Uji (Testing)
-```
+Dataset dibagi oleh pengguna menjadi dua file CSV terpisah. Dataset **training**
+digunakan untuk fitting scaler, seleksi fitur, tuning, dan pelatihan model.
+Dataset **testing** tidak pernah digunakan saat pelatihan dan hanya digunakan
+untuk evaluasi serta grafik aktual versus prediksi.
 
 ### 3. Seleksi Fitur
 
@@ -164,20 +162,32 @@ Dokumentasi interaktif (Swagger UI) tersedia otomatis di `http://localhost:8000/
 
 ### `POST /api/upload`
 
-Mengunggah dataset CSV, membersihkan data, dan menyiapkannya untuk pipeline prediksi.
+Mengunggah dua dataset CSV, membersihkan data, dan menyiapkannya untuk pipeline
+prediksi. Kedua field multipart wajib dikirim:
 
 ```http
 POST /api/upload
 Content-Type: multipart/form-data
 
-file: <CSV file>
+training_file: <CSV training file>
+testing_file: <CSV testing file>
 ```
 
 ```json
 {
-  "message": "Dataset berhasil diunggah dan diproses!",
-  "rows": 2500,
-  "last_date": "30 December 2025"
+  "message": "Dataset training dan testing berhasil diunggah dan diproses!",
+  "training": {
+    "rows": 2000,
+    "start_date": "02 Januari 2015",
+    "last_date": "30 Desember 2022",
+    "features": 6
+  },
+  "testing": {
+    "rows": 500,
+    "start_date": "02 Januari 2023",
+    "last_date": "30 Desember 2025",
+    "features": 6
+  }
 }
 ```
 
@@ -305,12 +315,13 @@ Dashboard dapat diakses di `http://localhost:5173` (mode `npm run dev`) atau `ht
 
 ### Alur Penggunaan Dashboard
 
-1. Unggah CSV dataset BBRI pada panel **Upload Dataset**.
-2. Pilih mode **Ya (Seleksi Fitur)** atau **Tidak (Seluruh Fitur)**, lalu klik **RUN PREDICTION**.
-3. Lihat hasil prediksi harga hari berikutnya (SVR & Random Forest) beserta grafik *actual vs prediction* di tab **Dashboard**.
-4. Buka tab **Feature Selection** untuk melihat ranking fitur (Random Forest Importance).
-5. Buka tab **Model Evaluation** untuk membandingkan MAE, RMSE, dan R² keempat kombinasi (SVR/RF × All/Selected Features).
-6. Klik **Download Laporan Excel** untuk mengunduh laporan lengkap.
+1. Unggah CSV **Dataset Training** dan **Dataset Testing** pada panel **Upload Dataset**.
+2. Klik **Upload Kedua Dataset** dan pastikan kedua file berhasil diproses.
+3. Pilih mode **Ya (Seleksi Fitur)** atau **Tidak (Seluruh Fitur)**, lalu klik **RUN PREDICTION**.
+4. Lihat hasil prediksi harga hari berikutnya (SVR & Random Forest) beserta grafik *actual vs prediction* di tab **Dashboard**.
+5. Buka tab **Feature Selection** untuk melihat ranking fitur (Random Forest Importance).
+6. Buka tab **Model Evaluation** untuk membandingkan MAE, RMSE, dan R² keempat kombinasi (SVR/RF × All/Selected Features).
+7. Klik **Download Laporan Excel** untuk mengunduh laporan lengkap.
 
 ---
 

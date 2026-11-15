@@ -56,7 +56,8 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
                 )
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    df = df.ffill().bfill()
+    # Eliminasi baris yang memiliki nilai kosong (missing value) pada variabel fitur
+    df = df.dropna(subset=FEATURES).reset_index(drop=True)
 
     # Transformasi Log Return & bersihkan NaN/Inf di baris pertama
     df["Log_Return"] = np.log(df["Close"] / df["Close"].shift(1))
@@ -209,5 +210,7 @@ def train_and_evaluate_models(
         svr_pred_close,
         rf_pred_close,
         svr_best,
-        rf_best
+        rf_best,
+        svr_grid.best_params_,
+        rf_grid.best_params_
     )

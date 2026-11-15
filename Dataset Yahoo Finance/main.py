@@ -3,7 +3,7 @@ import yfinance as yf
 data = yf.download(
     "BBRI.JK",
     start="2015-01-01",
-    end="2026-06-18",
+    end="2026-01-30",
     auto_adjust=False
 )
 
